@@ -163,6 +163,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                             fromLogBuilder.addCode(
                                 "$L = table.get($S, $L);\n", simpleName, logName, simpleName);
                           }
+                          toLogBuilder.addCode("//" + hasAutoLog);
                           if (fieldElement.asType().getKind().equals(TypeKind.ARRAY)) {
                             // Need to deep copy arrays
                             cloneBuilder.addCode(
