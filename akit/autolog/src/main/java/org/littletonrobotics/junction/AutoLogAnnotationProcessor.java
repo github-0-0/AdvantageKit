@@ -130,10 +130,39 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                                     + ")");
                           }
 
-                          // Log data (might be serialized)
-                          toLogBuilder.addCode("table.put($S, $L);\n", logName, simpleName);
-                          fromLogBuilder.addCode(
-                              "$L = table.get($S, $L);\n", simpleName, logName, simpleName);
+                          TypeElement fieldTypeElement =
+                              (TypeElement)
+                                  processingEnv.getTypeUtils().asElement(fieldElement.asType());
+
+                          boolean hasAutoLog =
+                              fieldTypeElement.getAnnotationMirrors().stream()
+                                  .anyMatch(
+                                      mirror ->
+                                          ((TypeElement) mirror.getAnnotationType().asElement())
+                                              .getQualifiedName()
+                                              .contentEquals(
+                                                  "org.littletonrobotics.junction.AutoLog"));
+                          if (hasAutoLog) {
+                            ClassName autoLoggedType =
+                                ClassName.get(
+                                    getPackageName(fieldTypeElement),
+                                    fieldTypeElement.getSimpleName() + "AutoLogged");
+                            toLogBuilder.addCode(
+                                "(($T) $L).toLog(table.getSubTable($S));\n",
+                                autoLoggedType,
+                                simpleName,
+                                logName);
+                            fromLogBuilder.addCode(
+                                "(($T) $L).fromLog(table.getSubTable($S));\n",
+                                autoLoggedType,
+                                simpleName,
+                                logName);
+                          } else {
+                            // Log data (might be serialized)
+                            toLogBuilder.addCode("table.put($S, $L);\n", logName, simpleName);
+                            fromLogBuilder.addCode(
+                                "$L = table.get($S, $L);\n", simpleName, logName, simpleName);
+                          }
                           if (fieldElement.asType().getKind().equals(TypeKind.ARRAY)) {
                             // Need to deep copy arrays
                             cloneBuilder.addCode(
